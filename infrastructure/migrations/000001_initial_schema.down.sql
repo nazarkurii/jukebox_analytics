@@ -1,0 +1,6 @@
+BEGIN;
+
+DROP TABLE IF EXISTS playback_logs;
+DROP TABLE IF EXISTS tracks;
+
+COMMIT;

@@ -1,0 +1,271 @@
+openapi: 3.0.0
+info:
+  title: Jukebox Analytics API
+  description: API for managing jukebox tracks, logging playbacks, and retrieving analytics.
+  version: 1.0.0
+
+paths:
+  # --- Playback Logs ---
+  /api/v1/logs:
+    post:
+      summary: Register a track playback
+      tags: [Playback]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterPlaybackRequest'
+      responses:
+        '201':
+          description: Playback log created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsePlaybackLog'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # --- Tracks ---
+  /api/v1/tracks/{id}/price:
+    patch:
+      summary: Update track price
+      tags: [Tracks]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique track ID
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTrackPriceRequest'
+      responses:
+        '200':
+          description: Price updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateTrackPriceResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # --- Stats ---
+  /api/v1/stats/top:
+    get:
+      summary: Get top played tracks
+      tags: [Analytics]
+      responses:
+        '200':
+          description: A list of top tracks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ResponseTrack'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/stats/revenue:
+    get:
+      summary: Get revenue analytics
+      tags: [Analytics]
+      responses:
+        '200':
+          description: Total and per-track revenue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseRevenue'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  responses:
+    BadRequest:
+      description: Invalid input, bad ID format, or malformed JSON
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/ErrorBadRequest'
+              - $ref: '#/components/schemas/ErrorInvalidJSON'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorNotFound'
+
+    UnprocessableEntity:
+      description: Validation failed for request data (e.g. invalid track id or amount/price)
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/ErrorInvalidTrackID'
+              - $ref: '#/components/schemas/ErrorInvalidTrackPrice'
+              - $ref: '#/components/schemas/ErrorInvalidAmountPaid'
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorInternalServer'
+
+  schemas:
+    # --- Error Schemas ---
+    ErrorBadRequest:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "invalid track price, has to be greater than 0"
+
+    ErrorInvalidJSON:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "invalid json body"
+
+    ErrorNotFound:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "there is no ressource associated with provided id"
+
+    ErrorInvalidTrackID:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "invalid track id, has to be greater than 0"
+
+    ErrorInvalidTrackPrice:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "invalid track price, has to be greater than 0"
+
+    ErrorInvalidAmountPaid:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "invalid amount_paid, has to be greater than 0"
+
+    ErrorInternalServer:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "internal server error"
+
+    # --- Data Schemas ---
+    RegisterPlaybackRequest:
+      type: object
+      required: [track_id, amount_paid]
+      properties:
+        track_id:
+          type: integer
+          example: 5
+        amount_paid:
+          type: integer
+          example: 99
+
+    UpdateTrackPriceRequest:
+      type: object
+      required: [newPrice]
+      properties:
+        newPrice:
+          type: integer
+          example: 150
+
+    ResponseTrack:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Static Typing Blues"
+        artist:
+          type: string
+          example: "The Gophers"
+        price:
+          type: integer
+          example: 99
+
+    ResponsePlaybackLog:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 101
+        track_id:
+          type: integer
+          example: 1
+        played_at:
+          type: string
+          format: date-time
+          example: "2026-04-13T22:31:25Z"
+        amount_paid:
+          type: integer
+          example: 99
+
+    UpdateTrackPriceResponse:
+      type: object
+      properties:
+        track:
+          $ref: '#/components/schemas/ResponseTrack'
+
+    ResponseTrackRevenue:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Static Typing Blues"
+        artist:
+          type: string
+          example: "The Gophers"
+        revenue:
+          type: integer
+          example: 1250
+
+    ResponseRevenue:
+      type: object
+      properties:
+        total_revenue:
+          type: integer
+          example: 5500
+        by_track:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResponseTrackRevenue'
